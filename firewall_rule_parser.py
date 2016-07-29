@@ -10,6 +10,14 @@ test_rules = [
 ]
 
 
+def lpop(src_list):
+    try:
+        left = src_list[0]
+        del src_list[0]
+        return left
+    except (IndexError, ValueError):
+        raise ValueError('cannot left pop src_list "{}"'.format(src_list))
+
 def cidr_from_netmask(netmask):
     """
     Give the subnet mask length for a given netmask.
@@ -47,7 +55,8 @@ class Parser():
     def __init__(self):
         pass
 
-    def parse_rule(self, rule_text):
+    @staticmethod
+    def parse_rule(rule_text):
         rule_text = rule_text.strip()
         rule_list = rule_text.split()
         if len(rule_list) < 6:
@@ -57,10 +66,43 @@ class Parser():
         if rule_type == 'access-list':
             acl_name, acl_action, acl_proto = rule_list[1:4]
 
-    def parse_target(self, target_text):
-        target_text = target_text.strip()
-        target_list = target_text.split()
-        t_len = len(target_list)
+    @staticmethod
+    def parse_ace(ace_list):
+        ace_name = ace_list[1]
+        ace_type = ace_list[2]
+        ace_text = ' '.join(ace_list[3:])
+        if ace_type == 'remark':
+            return {'type': 'remark',
+                    'text': ' '.join(ace_text)}
+        if ace_type == 'extended':
+            ace_action, ace_proto = ace_list[3:5]
+            ace_src, ace_dst = Parser.parse_targets(ace_list[5:])
+            return {'type': 'extended',
+                    'text': ' '.join(ace_text),
+                    ''}
+
+    @staticmethod
+    def parse_targets(targets_list):
+        src_target, dst_target = dict(), dict()
+        for target in (src_target, dst_target):
+            target, targets_list = Parser.parse_target(targets_list)
+        return src_target, dst_target
+
+    def parse_target(self, target_list):
+        try:
+            t_type = lpop(target_list)
+        except ValueError:
+            raise ValueError('invalid target_list "{}"'.format(target_list))
+        if t_type in ('any', 'any4', 'any6'):
+            return {t_type: t_type}, target_list
+        if t_type == 'host':
+            t_target = lpop(target_list)
+            pass
+        if t_type in ('object', 'object-group'):
+            pass
+
+
+
         if t_len == 1:
             if target_text == 'any':
                 return 'any'
