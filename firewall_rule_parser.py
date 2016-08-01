@@ -93,23 +93,24 @@ class Parser():
             t_type = lpop(target_list)
         except ValueError:
             raise ValueError('invalid target_list "{}"'.format(target_list))
+        r_val = {'type': t_type}
         if t_type in ('any', 'any4', 'any6'):
-            return {t_type: t_type}, target_list
+            return r_val, target_list
+
+        t_target = lpop(target_list)
         if t_type == 'host':
-            t_target = lpop(target_list)
-            pass
+            r_val['target'] = ipaddress.ip_address(t_target)
+            return r_val, target_list
+
         if t_type in ('object', 'object-group'):
-            pass
+            r_val['target'] = t_target
+            return r_val, target_list
 
-
-
-        if t_len == 1:
-            if target_text == 'any':
-                return 'any'
-            try:
-                return ipaddress.IPv4Address(target_text)
-            except ipaddress.AddressValueError:
-                pass
+        # it's an address and mask combination
+        t_mask = lpop(target_list)
+        t_bit_len = cidr_from_netmask(t_mask)
+        t_cidr = '/'.join((t_target, t_bit_len))
+        r_val['target'] = ipaddress.ip_network(t_cidr, False)
 
 
 def main():
