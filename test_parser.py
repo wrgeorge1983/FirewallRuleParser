@@ -5,39 +5,109 @@ __author__ = 'William.George'
 
 
 class TestParser(TestCase):
-    def test_parse_rule(self):
+    def test_parse_object_target(self):
+        tests = [
+            ('host 1.1.1.1',
+                {
+                    'type': 'network',
+                    'target': ipaddress.IPv4Network('1.1.1.1/32')}),
+            ('subnet 10.10.10.0 255.255.255.0',
+                {
+                    'type': 'network',
+                    'target': ipaddress.IPv4Network('10.10.10.0/24')}),
+            ('network-object object OBJ01',
+                {
+                    'type': 'object',
+                    'target': 'OBJ01'}),
+            ('network-object 20.20.0.0 255.255.128.0',
+                {
+                    'type': 'network',
+                    'target': ipaddress.IPv4Network('20.20.0.0/17')}),
+            ('port-object eq www',
+                {
+                    'type': 'service',
+                    'target': {'op': 'eq',
+                               'val': 'www'}}),
+            ('service-object tcp destination eq 2000',
+                {
+                    'type': 'service',
+                    'target': {'op': 'eq',
+                               'val': '2000'},
+                    'protocol': 'tcp'}),
+            ('service-object icmp echo',
+                {
+                    'type': 'service',
+                    'target': {'op': 'eq',
+                               'val': 'echo'},
+                    'protocol': 'icmp'}),
+            ('icmp-object echo-reply',
+                {
+                    'type': 'service',
+                    'target': {'op': 'eq',
+                               'val': 'echo-reply'},
+                    'protocol': 'icmp'}),
+            ('group-object DST_GRP',
+                {
+                    'type': 'object-group',
+                    'target': 'DST_GRP'}),
+            ('port-object range 10500 10600',
+                {
+                    'type': 'service',
+                    'target': {'op': 'range',
+                               'val': '10500 10600'}}),
+            ('protocol-object udp',
+                {
+                    'type': 'protocol',
+                    'target': 'udp'}),
+        ]
+        for src_val, e_r_val in tests:
+            self.assertEqual(e_r_val, Parser.parse_object_target(src_val.split()))
 
-        self.fail()
+    def test_parse_object(self):
+        tests = [
+            ('object network OBJ01\n host 1.1.1.1',
+                {
+                    'type': 'network',
+                    'object': 'OBJ01',
+                    'target': ipaddress.IPv4Network('1.1.1.1/32')}),
+            ('object network OBJ02\n host 2.2.2.2\n description 2nd object',
+                {
+                    'type': 'network',
+                    'object': 'OBJ02',
+                    'target': ipaddress.IPv4Network('2.2.2.2/32')})
+        ]
+        for src_val, e_r_val in tests:
+            self.assertEqual(e_r_val, Parser.parse_object(src_val.splitlines()))
 
     def test_parse_ace(self):
         tests = [
-            (
-                'access-list test_pz_ext_access_out '
-                'extended permit tcp host 1.1.1.40 host 2.2.2.2 '
-                'object-group web_ports inactive',
-                {
-                    'dst': {
-                        'type': 'network',
-                        'target': ipaddress.IPv4Network('2.2.2.2/32')},
-                    'src': {
-                        'type': 'network',
-                        'target': ipaddress.IPv4Network('1.1.1.40/32')},
-                    'service': {
-                        'type': 'object-group',
-                        'target': 'web_ports'},
-                    'active': False,
-                    'log': '',
-                    'protocol': 'tcp',
-                    'acl': 'test_pz_ext_access_out',
-                    'acl_type': 'extended',
-                    'action': 'permit'
-                }
-            )
+            {
+                'text':
+                    'access-list test_pz_ext_access_out '
+                    'extended permit tcp host 1.1.1.40 host 2.2.2.2 '
+                    'object-group web_ports inactive',
+                'dst': {
+                    'type': 'network',
+                    'target': ipaddress.IPv4Network('2.2.2.2/32')},
+                'src': {
+                    'type': 'network',
+                    'target': ipaddress.IPv4Network('1.1.1.40/32')},
+                'service': {
+                    'type': 'object-group',
+                    'target': 'web_ports'},
+                'active': False,
+                'log': '',
+                'protocol': 'tcp',
+                'acl': 'test_pz_ext_access_out',
+                'acl_type': 'extended',
+                'action': 'permit'
+            }
         ]
-        for src_val, e_r_val in tests:
+        for test in tests:
+            src_val = test['text']
             r_val = Parser.parse_ace(src_val.split())
-            for key in e_r_val.keys():
-                self.assertEqual(e_r_val[key], r_val[key])
+            for key in test.keys():
+                self.assertEqual(test[key], r_val[key])
 
 
     def test_parse_target(self):
@@ -54,7 +124,7 @@ class TestParser(TestCase):
                 {
                     'type': 'service',
                     'target': {'op': 'eq',
-                                     'val': '22'}}),
+                               'val': '22'}}),
             ('object SRC_OBJ object-group DST_GROUP object-group PORT_GROUP log',
                 {
                     'type': 'object',

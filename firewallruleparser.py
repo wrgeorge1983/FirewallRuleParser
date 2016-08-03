@@ -73,7 +73,7 @@ def is_ip_address(text):
     try:
         ipaddress.ip_address(text)
         return True
-    except ipaddress.AddressValueError:
+    except (ipaddress.AddressValueError, ValueError):
         return False
 
 
@@ -98,7 +98,8 @@ class Parser():
         acl_name, ace_type = ace_list[1:3]
 
         r_val = {'log': '',
-                 'active': True}
+                 'active': True,
+                 'text': ' '.join(ace_list)}
 
         if ace_type == 'remark':
             r_val.update({'type': 'remark',
@@ -197,6 +198,40 @@ class Parser():
             raise ValueError('Invalid target list: {}'.format(o_tl))
 
         return r_val, target_list
+
+    @staticmethod
+    def parse_object_target(target_list):
+        r_val = {}
+        t_type = lpop(target_list)
+        if t_type == 'object':
+            r_val['type'] = 'object'
+            r_val['target'] = lpop(target_list)
+        elif is_ip_address(t_type):
+            t_target = t_type
+            r_val['type'] = 'network'
+            t_mask = lpop(target_list)
+            t_bit_len = cidr_from_netmask(t_mask)
+            t_cidr = '/'.join((t_target, str(t_bit_len)))
+            r_val['target'] = ipaddress.ip_network(t_cidr, False)
+        elif t_type == 'host':
+            r_val['type'] = 'network'
+            r_val['target'] = ipaddress.IPv4Network(target_list[0])
+        elif t_type in ('subnet', 'network-object'):
+            r_val['type'] = 'network'
+            r_val.update(Parser.parse_object_target(target_list))
+        elif t_type in ('port-object', 'service-object', 'icmp-object',
+                        'group-object', 'protocol-object'):
+            r_val['target'] = 'Not Implemented'
+        else:
+            raise ValueError('Invalid object target type: {}'.format(t_type))
+        return r_val
+
+    @staticmethod
+    def parse_object(object_lines):
+        _, o_type, o_name = object_lines[0].split()
+        r_val = {'object': o_name}
+        r_val.update(Parser.parse_object_target(object_lines[1].split()))
+        return r_val
 
 
 def main():
