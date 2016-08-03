@@ -9,6 +9,18 @@ test_rules = [
     'access-list 123 permit tcp any host 10.20.30.40 eq 80'
 ]
 
+log_levels = [
+    'alerts',
+    'critical',
+    'debugging',
+    'emergencies',
+    'errors',
+    'informational',
+    'notifications',
+    'warnings'
+]
+log_levels.extend( range(0, 8))
+
 
 def lpop(src_list):
     try:
@@ -64,6 +76,7 @@ def is_ip_address(text):
     except ipaddress.AddressValueError:
         return False
 
+
 class Parser():
 
     def __init__(self):
@@ -82,24 +95,69 @@ class Parser():
 
     @staticmethod
     def parse_ace(ace_list):
-        ace_name = ace_list[1]
-        ace_type = ace_list[2]
-        ace_text = ' '.join(ace_list[3:])
+        acl_name, ace_type = ace_list[1:3]
+
+        r_val = {'log': '',
+                 'active': True}
+
         if ace_type == 'remark':
-            return {'type': 'remark',
-                    'text': ' '.join(ace_text)}
-        if ace_type == 'extended':
+            r_val.update({'type': 'remark',
+                          'text': ' '.join(ace_list)})
+        elif ace_type == 'extended':
             ace_action, ace_proto = ace_list[3:5]
-            ace_src, ace_dst = Parser.parse_targets(ace_list[5:])
-            return {'type': 'extended',
-                    'text': ' '.join(ace_text)}
+            r_val.update({
+                'acl_type': ace_type,
+                'action': ace_action,
+                'protocol': ace_proto,
+                'acl': acl_name,
+            })
+            r_val.update(Parser.parse_targets(ace_list[4:]))
+            r_ace_list = r_val.pop('remaining_list')
+
+            for index, item in enumerate(r_ace_list):
+                if item == 'log':
+                    try:
+                        n_item = r_ace_list[index + 1]
+                        if n_item in log_levels or n_item in ('disable', 'Default'):
+                            r_val['log'] = 'log {}'.format(n_item)
+                        elif n_item == 'interval':
+                            r_val['log'] = 'log {} {}'.format(n_item, r_ace_list[index + 2])
+                        else:
+                            raise IndexError
+                    except IndexError:
+                        r_val['log'] = ['log']
+
+                elif item == 'inactive':
+                    r_val['active'] = False
+
+            return r_val
 
     @staticmethod
     def parse_targets(targets_list):
-        # [src, dst]
-        src_target, targets_list = Parser.parse_target(targets_list)
-        dst_target, targets_list = Parser.parse_target(targets_list)
-        return {'src': src_target, 'dst': dst_target}
+
+        if 'object' in targets_list[0]:
+            s_type = targets_list[0]
+        else:
+            s_type = lpop(targets_list)
+
+        # staying generic about this because we don't know exactly what format this is yet
+        t_A, targets_list = Parser.parse_target(targets_list)
+        t_B, targets_list = Parser.parse_target(targets_list)
+        try:
+            t_C, targets_list = Parser.parse_target(targets_list)
+        except ValueError:
+            t_C = {'type': 'protocol',
+                   'target': s_type}
+
+        if 'object' in s_type:
+            svc, src, dst = t_A, t_B, t_C
+        else:
+            src, dst, svc = t_A, t_B, t_C
+
+        if svc['type'] == 'service':
+            svc['type'] = s_type
+
+        return {'src': src, 'dst': dst, 'service': svc, 'remaining_list': targets_list}
 
     @staticmethod
     def parse_target(target_list):
@@ -111,15 +169,21 @@ class Parser():
         r_val = {'type': t_type}
 
         if t_type in ('any', 'any4', 'any6'):
-            r_val['target_addr'] = t_type
+            r_val['target'] = t_type
 
         elif t_type == 'host':
+            r_val['type'] = 'network'
             t_target = lpop(target_list)
-            r_val['target_addr'] = ipaddress.ip_address(t_target)
+            r_val['target'] = ipaddress.ip_network('/'.join([t_target, '32']))
 
         elif t_type in ('object', 'object-group'):
             t_target = lpop(target_list)
-            r_val['target_addr'] = t_target
+            r_val['target'] = t_target
+
+        elif t_type in ('eq', 'lt', 'gt'):
+            r_val['type'] = 'service'
+            r_val['target'] = {'op': t_type,
+                               'val': lpop(target_list)}
 
         elif is_ip_address(t_type):  # it's an address and mask combination
             t_target = t_type
@@ -127,7 +191,7 @@ class Parser():
             t_mask = lpop(target_list)
             t_bit_len = cidr_from_netmask(t_mask)
             t_cidr = '/'.join((t_target, str(t_bit_len)))
-            r_val['target_addr'] = ipaddress.ip_network(t_cidr, False)
+            r_val['target'] = ipaddress.ip_network(t_cidr, False)
 
         else:
             raise ValueError('Invalid target list: {}'.format(o_tl))
