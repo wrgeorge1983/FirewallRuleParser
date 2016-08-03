@@ -30,25 +30,39 @@ def cidr_from_netmask(netmask):
     :param netmask: a valid netmask of the form 255.255.255.0
     :return:
     """
-    bits = 0
-    octets = netmask.split('.')
     valid_octets = [
-        0,
-        128,
-        192,
-        224,
-        240,
-        248,
-        252,
-        254,
-        255
+        '0',
+        '128',
+        '192',
+        '224',
+        '240',
+        '248',
+        '252',
+        '254',
+        '255'
     ]
-    if len(octets) != 4 or any(octet not in valid_octets for octet in octets):
+
+    octet_values = {octet: value for value, octet in enumerate(valid_octets)}
+
+    if not is_ip_address(netmask):
+        raise ValueError('Invalid netmask {}'.format(netmask))
+
+    octets = netmask.split('.')
+
+    try:
+        bits = sum(octet_values[octet] for octet in octets)
+    except KeyError:
         raise ValueError('Invalid netmask "{}"'.format(netmask))
 
-    bits = sum(index for index, _ in enumerate(valid_octets))
     return bits
 
+
+def is_ip_address(text):
+    try:
+        ipaddress.ip_address(text)
+        return True
+    except ipaddress.AddressValueError:
+        return False
 
 class Parser():
 
@@ -78,39 +92,47 @@ class Parser():
             ace_action, ace_proto = ace_list[3:5]
             ace_src, ace_dst = Parser.parse_targets(ace_list[5:])
             return {'type': 'extended',
-                    'text': ' '.join(ace_text),
-                    ''}
+                    'text': ' '.join(ace_text)}
 
     @staticmethod
     def parse_targets(targets_list):
-        src_target, dst_target = dict(), dict()
-        for target in (src_target, dst_target):
-            target, targets_list = Parser.parse_target(targets_list)
-        return src_target, dst_target
+        # [src, dst]
+        src_target, targets_list = Parser.parse_target(targets_list)
+        dst_target, targets_list = Parser.parse_target(targets_list)
+        return {'src': src_target, 'dst': dst_target}
 
-    def parse_target(self, target_list):
+    @staticmethod
+    def parse_target(target_list):
+        o_tl = target_list.copy()
         try:
             t_type = lpop(target_list)
         except ValueError:
             raise ValueError('invalid target_list "{}"'.format(target_list))
         r_val = {'type': t_type}
+
         if t_type in ('any', 'any4', 'any6'):
-            return r_val, target_list
+            r_val['target_addr'] = t_type
 
-        t_target = lpop(target_list)
-        if t_type == 'host':
-            r_val['target'] = ipaddress.ip_address(t_target)
-            return r_val, target_list
+        elif t_type == 'host':
+            t_target = lpop(target_list)
+            r_val['target_addr'] = ipaddress.ip_address(t_target)
 
-        if t_type in ('object', 'object-group'):
-            r_val['target'] = t_target
-            return r_val, target_list
+        elif t_type in ('object', 'object-group'):
+            t_target = lpop(target_list)
+            r_val['target_addr'] = t_target
 
-        # it's an address and mask combination
-        t_mask = lpop(target_list)
-        t_bit_len = cidr_from_netmask(t_mask)
-        t_cidr = '/'.join((t_target, t_bit_len))
-        r_val['target'] = ipaddress.ip_network(t_cidr, False)
+        elif is_ip_address(t_type):  # it's an address and mask combination
+            t_target = t_type
+            r_val['type'] = 'network'
+            t_mask = lpop(target_list)
+            t_bit_len = cidr_from_netmask(t_mask)
+            t_cidr = '/'.join((t_target, str(t_bit_len)))
+            r_val['target_addr'] = ipaddress.ip_network(t_cidr, False)
+
+        else:
+            raise ValueError('Invalid target list: {}'.format(o_tl))
+
+        return r_val, target_list
 
 
 def main():
