@@ -219,6 +219,34 @@ class Parser():
         elif t_type in ('subnet', 'network-object'):
             r_val['type'] = 'network'
             r_val.update(Parser.parse_object_target(target_list))
+        elif t_type == 'port-object':
+            r_val['type'] = 'service'
+            t_op, *t_val = target_list
+            r_val['target'] = {'op': t_op, 'val': ' '.join(t_val)}
+        elif t_type == 'service-object':
+            s_type = lpop(target_list)
+            if s_type == 'object':
+                r_val['type'] = 'object'
+                r_val['target'] = lpop(target_list)
+            else:
+                r_val['type'] = 'service'
+                r_val['protocol'] = s_type
+                if s_type == 'icmp':
+                    r_val['target'] = {'op': 'eq', 'val': target_list[0]}
+                else:
+                    _ = lpop(target_list)
+                    t_op, *t_val = target_list
+                    r_val['target'] = {'op': t_op, 'val': ' '.join(t_val)}
+        elif t_type == 'icmp-object':
+            r_val['type'] = 'service'
+            r_val['protocol'] = 'icmp'
+            r_val['target'] = {'op': 'eq', 'val': lpop(target_list)}
+        elif t_type == 'group-object':
+            r_val['type'] = 'object-group'
+            r_val['target'] = lpop(target_list)
+        elif t_type == 'protocol-object':
+            r_val['type'] = 'protocol'
+            r_val['target'] = lpop(target_list)
         elif t_type in ('port-object', 'service-object', 'icmp-object',
                         'group-object', 'protocol-object'):
             r_val['target'] = 'Not Implemented'

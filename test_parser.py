@@ -61,7 +61,12 @@ class TestParser(TestCase):
                     'target': 'udp'}),
         ]
         for src_val, e_r_val in tests:
-            self.assertEqual(e_r_val, Parser.parse_object_target(src_val.split()))
+            try:
+                self.assertEqual(e_r_val, Parser.parse_object_target(src_val.split()))
+            except (ValueError):
+                self.fail('Failure for src_val "{}"'.format(src_val))
+
+
 
     def test_parse_object(self):
         tests = [
