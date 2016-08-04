@@ -71,27 +71,31 @@ def cidr_from_netmask(netmask):
 
 def is_ip_address(text):
     try:
-        ipaddress.ip_address(text)
+        ipaddress.ip_address(text.strip())
         return True
     except (ipaddress.AddressValueError, ValueError):
         return False
 
 
+def cli_group(lines):
+    current_grp = []
+    for line in lines:
+        if not line.startswith(' '):
+            if current_grp:
+                yield current_grp
+            if line:
+                current_grp = [line]
+        else:
+            current_grp.append(line)
+    if current_grp:
+        yield current_grp
+
+
 class Parser():
 
     def __init__(self):
-        pass
-
-    @staticmethod
-    def parse_rule(rule_text):
-        rule_text = rule_text.strip()
-        rule_list = rule_text.split()
-        if len(rule_list) < 6:
-            raise ValueError('Invalid rule_text "{}"'.format(rule_text))
-
-        rule_type = rule_list[0]
-        if rule_type == 'access-list':
-            acl_name, acl_action, acl_proto = rule_list[1:4]
+        self.objects = {}
+        self.object_groups = {}
 
     @staticmethod
     def parse_ace(ace_list):

@@ -2,7 +2,7 @@ import unittest
 
 __author__ = 'William.George'
 
-from firewallruleparser import lpop, cidr_from_netmask, is_ip_address
+from firewallruleparser import lpop, cidr_from_netmask, is_ip_address, cli_group
 
 
 class TestLpop(unittest.TestCase):
@@ -29,17 +29,30 @@ class TestLpop(unittest.TestCase):
         tests = [
             ('255.255.255.255', True),
             ('255.255.0.0', True),
-            ('0.0.0.0', True)
+            ('0.0.0.0', True),
+            ('256.255.255.255', False),
+            ('1.1.1.1.1', False),
+            (' 1.1.1.1', True),
         ]
         [self.assertEqual(e_out, is_ip_address(src)) for src, e_out in tests]
-        tests = [
-            '256.255.255.255',
-            '1.1.1.1.1',
-            ' 1.1.1.1'
-        ]
-        for test in tests:
-            with self.assertRaises(ValueError):
-                is_ip_address(test)
+
+    def test_cli_group(self):
+        test = ('''
+line1
+line2
+ subline2.1
+ subline2.2
+line3
+ subline3.1''',[
+            ['line1'],
+            ['line2',
+             ' subline2.1',
+             ' subline2.2'],
+            ['line3',
+             ' subline3.1']
+        ])
+
+        self.assertEqual(test[1], list(cli_group(test[0].splitlines())))
 
 
 if __name__ == '__main__':

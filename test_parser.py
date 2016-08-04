@@ -66,8 +66,6 @@ class TestParser(TestCase):
             except (ValueError):
                 self.fail('Failure for src_val "{}"'.format(src_val))
 
-
-
     def test_parse_object(self):
         tests = [
             ('object network OBJ01\n host 1.1.1.1',
@@ -113,7 +111,6 @@ class TestParser(TestCase):
             r_val = Parser.parse_ace(src_val.split())
             for key in test.keys():
                 self.assertEqual(test[key], r_val[key])
-
 
     def test_parse_target(self):
         tests = [
