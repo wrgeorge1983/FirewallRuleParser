@@ -76,6 +76,12 @@ def is_ip_address(text):
     except (ipaddress.AddressValueError, ValueError):
         return False
 
+def is_ip_network(text):
+    try:
+        ipaddress.ip_network(text.strip())
+        return True
+    except (ipaddress.AddressValueError, ValueError):
+        return False
 
 def cli_group(lines):
     current_grp = []
@@ -83,7 +89,7 @@ def cli_group(lines):
         if not line.startswith(' '):
             if current_grp:
                 yield current_grp
-            if line:
+            if line and not line.startswith('!'):
                 current_grp = [line]
         else:
             current_grp.append(line)
@@ -217,9 +223,15 @@ class Parser():
             t_bit_len = cidr_from_netmask(t_mask)
             t_cidr = '/'.join((t_target, str(t_bit_len)))
             r_val['target'] = ipaddress.ip_network(t_cidr, False)
+        elif is_ip_network(t_type):
+            r_val['type'] = 'network'
+            r_val['target'] = ipaddress.ip_network(t_type)
+        elif t_type == 'range':
+            r_val['type'] = t_type
+            r_val['target'] = target_list
         elif t_type == 'host':
             r_val['type'] = 'network'
-            r_val['target'] = ipaddress.IPv4Network(target_list[0])
+            r_val['target'] = ipaddress.ip_network(target_list[0])
         elif t_type in ('subnet', 'network-object'):
             r_val['type'] = 'network'
             r_val.update(Parser.parse_object_target(target_list))
@@ -227,7 +239,7 @@ class Parser():
             r_val['type'] = 'service'
             t_op, *t_val = target_list
             r_val['target'] = {'op': t_op, 'val': ' '.join(t_val)}
-        elif t_type == 'service-object':
+        elif t_type in ('service', 'service-object'):
             s_type = lpop(target_list)
             if s_type == 'object':
                 r_val['type'] = 'object'
@@ -236,7 +248,10 @@ class Parser():
                 r_val['type'] = 'service'
                 r_val['protocol'] = s_type
                 if s_type == 'icmp':
-                    r_val['target'] = {'op': 'eq', 'val': target_list[0]}
+                    try:
+                        r_val['target'] = {'op': 'eq', 'val': target_list[0]}
+                    except IndexError:
+                        r_val['target'] = {'op': 'eq', 'val': 'any'}
                 else:
                     _ = lpop(target_list)
                     t_op, *t_val = target_list
@@ -251,6 +266,8 @@ class Parser():
         elif t_type == 'protocol-object':
             r_val['type'] = 'protocol'
             r_val['target'] = lpop(target_list)
+        elif t_type == 'description':
+            return None
         elif t_type in ('port-object', 'service-object', 'icmp-object',
                         'group-object', 'protocol-object'):
             r_val['target'] = 'Not Implemented'
@@ -260,10 +277,44 @@ class Parser():
 
     @staticmethod
     def parse_object(object_lines):
-        _, o_type, o_name = object_lines[0].split()
-        r_val = {'object': o_name}
-        r_val.update(Parser.parse_object_target(object_lines[1].split()))
+        r_val = {}
+        try:
+            _, o_type, o_name = object_lines[0].split()
+        except ValueError:
+            _, o_type, o_name, o_protocol = object_lines[0].split()
+            r_val['protocol'] = o_protocol
+        r_val['object'] = o_name
+        r_val['target'] = [Parser.parse_object_target(line.split())
+                           for line in object_lines[1:]]
+        r_val['target'] = [t for t in r_val['target'] if t is not None]
         return r_val
+
+    @staticmethod
+    def parse_ruleset(ruleset_text):
+        ruleset_lines = [line for line in ruleset_text.splitlines() if line]
+        ruleset_grps = cli_group(ruleset_lines)
+        for grp in ruleset_grps:
+            if grp[0].startswith('object'):
+                yield Parser.parse_object(grp)
+            elif len(grp) > 1:
+                raise ValueError(
+                    'invalid CLI Group in ruleset_text: {}'.format('\n'.join(grp)))
+            elif grp[0].startswith('access-list'):
+                yield Parser.parse_ace(grp[0].split())
+
+
+def get_ruleset():
+    with open('testruleset.cfg') as fil:
+        ruleset = fil.read()
+    return ruleset
+
+
+def run_ruleset():
+    import json
+    rs = get_ruleset()
+    parsed = Parser.parse_ruleset(rs)
+    with open('rules_out.txt', 'w') as fil:
+        fil.write(json.dumps(list(parsed), default=lambda o: str(o), indent=4 ))
 
 
 def main():
