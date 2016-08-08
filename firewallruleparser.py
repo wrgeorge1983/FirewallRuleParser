@@ -19,7 +19,7 @@ log_levels = [
     'notifications',
     'warnings'
 ]
-log_levels.extend( range(0, 8))
+log_levels.extend(range(0, 8))
 
 
 def lpop(src_list):
