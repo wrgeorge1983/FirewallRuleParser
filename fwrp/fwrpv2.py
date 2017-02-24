@@ -2,20 +2,22 @@
 fwrpv2.py
 module for manipulating and understanding firewall rulesets
 """
+import ipaddress
+
 import attr
 
 @attr.s
-class ACLNode(object):
+class ACLObject(object):
 	name = attr.ib()
-	
+	type = attr.ib()
+	targets = attr.ib()
+
 
 @attr.s
-class ACLObject(ACLNode):
-	pass
+class ACLObjectCollection(object)
+	name = attr.ib()
+	objects = attr.ib(default=attr.Factory(list))
 
-@attr.s
-class ACLGroup(ACLObject):
-	"""
-	Only use this if we have to
-	"""
+
+def aclo_from_object_definition(object_definition):
 	pass

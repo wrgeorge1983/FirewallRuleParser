@@ -1,7 +1,10 @@
 """
 utils.py
 """
-__author__ == 'William George'
+__author__ = 'William George'
+
+import json
+import ipaddress
 
 def lpop(src_list):
     try:
@@ -63,3 +66,35 @@ def is_ip_network(text):
         return True
     except (ipaddress.AddressValueError, ValueError):
         return False
+
+
+def instance_in(obj, classes):
+    for cls in classes:
+        if isinstance(obj, cls):
+            return True
+    return False
+
+
+class IPEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ipaddress._IPAddressBase):
+            return {
+                '__class__': obj.__class__.__name__,
+                'value': str(obj)
+            }
+        return super().default(self, obj)
+
+
+def as_IP(dct):
+    if '__class__' in dct:
+        classes = {
+            'IPv4Address': ipaddress.IPv4Address,
+            'IPv4Network': ipaddress.IPv4Network,
+            'IPv6Address': ipaddress.IPv6Address,
+            'IPv6Network': ipaddress.IPv6Network
+        }
+        cls = classes.get(dct['__class__'])
+        if cls is None:
+            raise NotImplementedError
+        return cls(dct['value'])
+    return dct
