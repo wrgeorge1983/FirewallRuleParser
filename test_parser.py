@@ -1,10 +1,10 @@
-from unittest import TestCase
+import unittest
 from firewallruleparser import Parser
 import ipaddress
 __author__ = 'William.George'
 
 
-class TestParser(TestCase):
+class TestParser(unittest.TestCase):
     def test_parse_object_target(self):
         tests = [
             ('host 1.1.1.1',
@@ -197,3 +197,6 @@ class TestParser(TestCase):
             r_val = Parser.parse_targets(src_val.split())
             for key in e_r_val.keys():
                 self.assertEqual(e_r_val[key], r_val[key])
+
+if __name__ == '__main__':
+    unittest.main()
