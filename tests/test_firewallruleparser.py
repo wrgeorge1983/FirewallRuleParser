@@ -1,8 +1,12 @@
-import unittest
-
 __author__ = 'William.George'
 
-from firewallruleparser import lpop, cidr_from_netmask, is_ip_address, cli_group
+import unittest
+
+# from ..fwrp.firewallruleparser import lpop, cidr_from_netmask, is_ip_address, cli_group
+# from .context.fwrp.firewallruelparser import lpop, cidr_from_netmask, is_ip_address, cli_group
+# from .context import fwrp
+# from .context.fwrp import firewallruelparser
+from fwrp.firewallruleparser import lpop, cidr_from_netmask, is_ip_address, cli_group
 
 
 class TestLpop(unittest.TestCase):
@@ -37,13 +41,16 @@ class TestLpop(unittest.TestCase):
         [self.assertEqual(e_out, is_ip_address(src)) for src, e_out in tests]
 
     def test_cli_group(self):
-        test = ('''
-line1
-line2
- subline2.1
- subline2.2
-line3
- subline3.1''',[
+        src_val = (
+            'line1\n'
+            'line2\n'
+            ' subline2.1\n'
+            ' subline2.2\n'
+            'line3\n'
+            ' subline3.1\n'
+        )
+
+        test = (src_val,[
             ['line1'],
             ['line2',
              ' subline2.1',
@@ -55,5 +62,5 @@ line3
         self.assertEqual(test[1], list(cli_group(test[0].splitlines())))
 
 
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == '__main__':
+#     unittest.main()

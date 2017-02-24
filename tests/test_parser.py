@@ -1,5 +1,5 @@
 import unittest
-from firewallruleparser import Parser
+from fwrp.firewallruleparser import Parser
 import ipaddress
 __author__ = 'William.George'
 
