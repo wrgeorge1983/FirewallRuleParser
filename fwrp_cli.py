@@ -1,10 +1,12 @@
 import click
 
 from fwrp import firewallruleparser
+from fwrp import fwrpv2
 
 @click.command()
 def cli():
-	print('asdf')
+	node = fwrpv2.ACLGroup(name='x')
+	print(node)
 
 
 if __name__ == '__main__':

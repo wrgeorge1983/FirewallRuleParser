@@ -6,7 +6,8 @@ import unittest
 # from .context.fwrp.firewallruelparser import lpop, cidr_from_netmask, is_ip_address, cli_group
 # from .context import fwrp
 # from .context.fwrp import firewallruelparser
-from fwrp.firewallruleparser import lpop, cidr_from_netmask, is_ip_address, cli_group
+from fwrp.utils import lpop, cidr_from_netmask, is_ip_address
+from fwrp.firewallruleparser import cli_group
 
 
 class TestLpop(unittest.TestCase):
