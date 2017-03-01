@@ -198,5 +198,6 @@ class TestParser(unittest.TestCase):
             for key in e_r_val.keys():
                 self.assertEqual(e_r_val[key], r_val[key])
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -6,6 +6,7 @@ __author__ = 'William George'
 import json
 import ipaddress
 
+
 def lpop(src_list):
     try:
         left = src_list[0]
@@ -13,6 +14,7 @@ def lpop(src_list):
         return left
     except (IndexError, ValueError):
         raise ValueError('cannot left pop src_list "{}"'.format(src_list))
+
 
 def cidr_from_netmask(netmask):
     """
@@ -59,6 +61,7 @@ def is_ip_address(text):
         return True
     except (ipaddress.AddressValueError, ValueError):
         return False
+
 
 def is_ip_network(text):
     try:

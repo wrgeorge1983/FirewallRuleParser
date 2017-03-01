@@ -43,7 +43,7 @@ line2
  subline2.1
  subline2.2
 line3
- subline3.1''',[
+ subline3.1''', [
             ['line1'],
             ['line2',
              ' subline2.1',

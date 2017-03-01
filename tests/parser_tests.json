@@ -1,106 +1,73 @@
-[
-    [
-        "host 1.1.1.1",
-        {
-            "target": {
-                "value": "1.1.1.1/32",
-                "__class__": "IPv4Network"
-            },
-            "type": "network"
+{
+    "host 1.1.1.1": {
+        "type": "network",
+        "target": {
+            "__class__": "IPv4Network",
+            "value": "1.1.1.1/32"
         }
-    ],
-    [
-        "subnet 10.10.10.0 255.255.255.0",
-        {
-            "target": {
-                "value": "10.10.10.0/24",
-                "__class__": "IPv4Network"
-            },
-            "type": "network"
+    },
+    "network-object object OBJ01": {
+        "type": "object",
+        "target": "OBJ01"
+    },
+    "icmp-object echo-reply": {
+        "protocol": "icmp",
+        "type": "service",
+        "target": {
+            "val": "echo-reply",
+            "op": "eq"
         }
-    ],
-    [
-        "network-object object OBJ01",
-        {
-            "target": "OBJ01",
-            "type": "object"
+    },
+    "port-object range 10500 10600": {
+        "type": "service",
+        "target": {
+            "val": "10500 10600",
+            "op": "range"
         }
-    ],
-    [
-        "network-object 20.20.0.0 255.255.128.0",
-        {
-            "target": {
-                "value": "20.20.0.0/17",
-                "__class__": "IPv4Network"
-            },
-            "type": "network"
+    },
+    "service-object tcp destination eq 2000": {
+        "protocol": "tcp",
+        "type": "service",
+        "target": {
+            "val": "2000",
+            "op": "eq"
         }
-    ],
-    [
-        "port-object eq www",
-        {
-            "target": {
-                "op": "eq",
-                "val": "www"
-            },
-            "type": "service"
+    },
+    "protocol-object udp": {
+        "type": "protocol",
+        "target": "udp"
+    },
+    "network-object 20.20.0.0 255.255.128.0": {
+        "type": "network",
+        "target": {
+            "__class__": "IPv4Network",
+            "value": "20.20.0.0/17"
         }
-    ],
-    [
-        "service-object tcp destination eq 2000",
-        {
-            "target": {
-                "op": "eq",
-                "val": "2000"
-            },
-            "type": "service",
-            "protocol": "tcp"
+    },
+    "service-object icmp echo": {
+        "protocol": "icmp",
+        "type": "service",
+        "target": {
+            "val": "echo",
+            "op": "eq"
         }
-    ],
-    [
-        "service-object icmp echo",
-        {
-            "target": {
-                "op": "eq",
-                "val": "echo"
-            },
-            "type": "service",
-            "protocol": "icmp"
+    },
+    "subnet 10.10.10.0 255.255.255.0": {
+        "type": "network",
+        "target": {
+            "__class__": "IPv4Network",
+            "value": "10.10.10.0/24"
         }
-    ],
-    [
-        "icmp-object echo-reply",
-        {
-            "target": {
-                "op": "eq",
-                "val": "echo-reply"
-            },
-            "type": "service",
-            "protocol": "icmp"
+    },
+    "group-object DST_GRP": {
+        "type": "object-group",
+        "target": "DST_GRP"
+    },
+    "port-object eq www": {
+        "type": "service",
+        "target": {
+            "val": "www",
+            "op": "eq"
         }
-    ],
-    [
-        "group-object DST_GRP",
-        {
-            "target": "DST_GRP",
-            "type": "object-group"
-        }
-    ],
-    [
-        "port-object range 10500 10600",
-        {
-            "target": {
-                "op": "range",
-                "val": "10500 10600"
-            },
-            "type": "service"
-        }
-    ],
-    [
-        "protocol-object udp",
-        {
-            "target": "udp",
-            "type": "protocol"
-        }
-    ]
-]
+    }
+}

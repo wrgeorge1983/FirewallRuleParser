@@ -3,7 +3,6 @@ firewall_rule_parser.py
 """
 
 import ipaddress
-import math
 
 test_rules = [
     'access-list 123 permit tcp any host 10.20.30.40 eq 80'
@@ -29,6 +28,7 @@ def lpop(src_list):
         return left
     except (IndexError, ValueError):
         raise ValueError('cannot left pop src_list "{}"'.format(src_list))
+
 
 def cidr_from_netmask(netmask):
     """
@@ -76,12 +76,14 @@ def is_ip_address(text):
     except (ipaddress.AddressValueError, ValueError):
         return False
 
+
 def is_ip_network(text):
     try:
         ipaddress.ip_network(text.strip())
         return True
     except (ipaddress.AddressValueError, ValueError):
         return False
+
 
 def cli_group(lines):
     current_grp = []
@@ -319,6 +321,7 @@ def run_ruleset():
 
 def main():
     pass
+
 
 if __name__ == '__main__':
     main()

@@ -6,18 +6,27 @@ import ipaddress
 
 import attr
 
+
 @attr.s
 class ACLObject(object):
-	name = attr.ib()
-	type = attr.ib()
-	targets = attr.ib()
+    name = attr.ib()
+    type = attr.ib()
+    targets = attr.ib()
 
 
 @attr.s
-class ACLObjectCollection(object)
-	name = attr.ib()
-	objects = attr.ib(default=attr.Factory(list))
+class ACLObjectCollection(object):
+    name = attr.ib()
+    objects = attr.ib(default=attr.Factory(list))
+
+
+def host_to_object(odef):
+    value = odef.split()
+    ip = ipaddress.IPv4Network('{}/32'.format(value))
+    return ACLObject(name=value, type='network', targets=[ip])
 
 
 def aclo_from_object_definition(object_definition):
-	pass
+    dispatch = {
+        'host': host_to_object
+    }

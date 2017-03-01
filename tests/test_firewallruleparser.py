@@ -51,7 +51,7 @@ class TestLpop(unittest.TestCase):
             ' subline3.1\n'
         )
 
-        test = (src_val,[
+        test = (src_val, [
             ['line1'],
             ['line2',
              ' subline2.1',
